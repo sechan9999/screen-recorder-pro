@@ -62,15 +62,12 @@ const App: React.FC = () => {
     const [sysMuted, setSysMuted]               = useState(false);
     const micGainRef                            = useRef<GainNode | null>(null);
     const sysGainRef                            = useRef<GainNode | null>(null);
-<<<<<<< HEAD
     const analyserMicRef                       = useRef<AnalyserNode | null>(null);
     const analyserSysRef                       = useRef<AnalyserNode | null>(null);
 
     // ── Audio Levels ──────────────────────────────────────────────────────────
     const [micLevel, setMicLevel]               = useState(0);
     const [sysLevel, setSysLevel]               = useState(0);
-=======
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
 
     // ── Feature: Annotation Tools ────────────────────────────────────────────
     const [annotationTool, setAnnotationTool]   = useState<AnnotationTool>(null);
@@ -177,22 +174,13 @@ const App: React.FC = () => {
     const startMedia = async (mode: 'record' | 'stream') => {
         setError(null);
 
-<<<<<<< HEAD
         if (isMobile || isTablet) {
             setError('Screen capture is limited on mobile/tablet. Please use a desktop browser.');
-=======
-        // Mobile / tablet: getDisplayMedia not widely supported — warn gracefully
-        if (isMobile || isTablet) {
-            setError('Screen capture is limited on mobile/tablet. Please use a desktop browser for full functionality. Camera capture can be used as a fallback.');
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
+            // Allow attempting display media anyway if user really wants to try.
         }
 
         try {
             const [w, h] = selectedPreset.resolution.split('x').map(Number);
-<<<<<<< HEAD
-=======
-
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
             const displayStream = await navigator.mediaDevices.getDisplayMedia({
                 video: { frameRate: { ideal: selectedPreset.frameRate }, width: { ideal: w }, height: { ideal: h } },
                 audio: true
@@ -205,8 +193,7 @@ const App: React.FC = () => {
                 const audioContext = new AudioContext();
                 const destination = audioContext.createMediaStreamDestination();
 
-<<<<<<< HEAD
-                // Mic
+                // Mic Analyser
                 const micSource = audioContext.createMediaStreamSource(micStream);
                 const micGain = audioContext.createGain();
                 micGain.gain.value = micMuted ? 0 : micVolume;
@@ -218,16 +205,12 @@ const App: React.FC = () => {
                 micGain.connect(micAnalyser);
                 micGain.connect(destination);
 
-                // System
-=======
-                // System audio gain
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
+                // System audio Analyser
                 if (displayStream.getAudioTracks().length > 0) {
                     const sysSource = audioContext.createMediaStreamSource(new MediaStream([displayStream.getAudioTracks()[0]]));
                     const sysGain = audioContext.createGain();
                     sysGain.gain.value = sysMuted ? 0 : sysVolume;
                     sysGainRef.current = sysGain;
-<<<<<<< HEAD
                     const sysAnalyser = audioContext.createAnalyser();
                     sysAnalyser.fftSize = 256;
                     analyserSysRef.current = sysAnalyser;
@@ -236,30 +219,12 @@ const App: React.FC = () => {
                     sysGain.connect(destination);
                 }
 
-=======
-                    sysSource.connect(sysGain);
-                    sysGain.connect(destination);
-                }
-
-                // Microphone gain
-                const micSource = audioContext.createMediaStreamSource(micStream);
-                const micGain = audioContext.createGain();
-                micGain.gain.value = micMuted ? 0 : micVolume;
-                micGainRef.current = micGain;
-                micSource.connect(micGain);
-                micGain.connect(destination);
-
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                 combinedStream = new MediaStream([
                     ...displayStream.getVideoTracks(),
                     ...destination.stream.getAudioTracks()
                 ]);
-            } catch {
-<<<<<<< HEAD
-                console.warn('Mic unavailable');
-=======
-                console.warn('Mic unavailable. Using screen audio only.');
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
+            } catch (err) {
+                console.warn('Microphone permission denied or unavailable.', err);
             }
 
             setStream(combinedStream);
@@ -275,7 +240,7 @@ const App: React.FC = () => {
             recorder.ondataavailable = (e) => {
                 if (e.data.size > 0) {
                     chunks.push(e.data);
-                    setRecordedChunks([...chunks]);
+                    setRecordedChunks(p => [...p, e.data]);
                 }
             };
 
@@ -289,19 +254,13 @@ const App: React.FC = () => {
             recorder.start(1000);
             setRecordedChunks([]);
             setPreviewUrl(null);
-<<<<<<< HEAD
-=======
             setShareLink(null);
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
             if (mode === 'record') setIsRecording(true);
             else setIsStreaming(true);
 
         } catch (err: any) {
-<<<<<<< HEAD
-            setError(err.message || 'Failed to start');
-=======
-            setError(err.message || 'Failed to start. Check permissions.');
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
+            console.error('Fatal start error:', err);
+            setError(err.message || 'Permission denied. Make sure headers permit getDisplayMedia.');
         }
     };
 
@@ -312,22 +271,6 @@ const App: React.FC = () => {
         setStream(null);
     };
 
-<<<<<<< HEAD
-    // live gains
-=======
-    // ─────────────────────────────────────────────────────────────────────────
-    // AUDIO MIXING — live gain update
-    // ─────────────────────────────────────────────────────────────────────────
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
-    useEffect(() => {
-        if (micGainRef.current) micGainRef.current.gain.value = micMuted ? 0 : micVolume;
-    }, [micVolume, micMuted]);
-
-    useEffect(() => {
-        if (sysGainRef.current) sysGainRef.current.gain.value = sysMuted ? 0 : sysVolume;
-    }, [sysVolume, sysMuted]);
-
-<<<<<<< HEAD
     // Audio level loop
     useEffect(() => {
         let animationFrame: number;
@@ -346,10 +289,18 @@ const App: React.FC = () => {
             }
             animationFrame = requestAnimationFrame(updateLevels);
         };
-        if (isRecording || isStreaming || stream) updateLevels();
-        else { setMicLevel(0); setSysLevel(0); }
+        if (analyserMicRef.current || analyserSysRef.current) updateLevels();
         return () => cancelAnimationFrame(animationFrame);
-    }, [isRecording, isStreaming, stream]);
+    }, [stream]);
+
+    // Live gain update
+    useEffect(() => {
+        if (micGainRef.current) micGainRef.current.gain.value = micMuted ? 0 : micVolume;
+    }, [micVolume, micMuted]);
+
+    useEffect(() => {
+        if (sysGainRef.current) sysGainRef.current.gain.value = sysMuted ? 0 : sysVolume;
+    }, [sysVolume, sysMuted]);
 
     const trimVideo = async () => {
         if (!previewUrl || !ffmpegLoaded) return;
@@ -365,123 +316,31 @@ const App: React.FC = () => {
 
     const downloadRecording = () => {
         if (!previewUrl) return;
-        const a = document.createElement('a');
-        a.href = previewUrl; a.download = `mediapro-${Date.now()}.webm`; a.click();
+        const a = document.createElement('a'); a.href = previewUrl; a.download = `mediapro-${Date.now()}.webm`; a.click();
     };
 
-    const initiateCloudExport = async (provider: CloudProvider) => {
-        if (!previewUrl) return;
-        setCloudProvider(provider); setIsUploading(true); setUploadProgress(0);
+    const initiateCloudExport = async (p: CloudProvider) => {
+        setCloudProvider(p); setIsUploading(true); setUploadProgress(0);
         const interval = setInterval(() => {
-            setUploadProgress(p => {
-                if (p >= 100) { clearInterval(interval); setIsUploading(false); setShowCloudModal(false); return 100; }
-                return p + 10;
+            setUploadProgress(v => {
+                if (v >= 100) { clearInterval(interval); setIsUploading(false); setShowCloudModal(false); return 100; }
+                return v + 10;
             });
         }, 300);
     };
 
     const generateShareLink = useCallback(() => {
-        if (!previewUrl) return;
         const token = Math.random().toString(36).substring(2, 10).toUpperCase();
         setShareLink(`${window.location.origin}/share/${token}`);
-=======
-    // ─────────────────────────────────────────────────────────────────────────
-    // TRIM VIDEO
-    // ─────────────────────────────────────────────────────────────────────────
-    const trimVideo = async () => {
-        if (!previewUrl || !ffmpegLoaded) return;
-        setIsProcessing(true);
-        const ffmpeg = ffmpegRef.current;
-        try {
-            const blob = new Blob(recordedChunks, { type: 'video/webm' });
-            await ffmpeg.writeFile('input.webm', await fetchFile(blob));
-            await ffmpeg.exec(['-i', 'input.webm', '-ss', '00:00:00', '-t', '10', '-c', 'copy', 'output.webm']);
-            const data: any = await ffmpeg.readFile('output.webm');
-            setPreviewUrl(URL.createObjectURL(new Blob([data], { type: 'video/webm' })));
-        } catch (err) {
-            setError('Trim failed.');
-        } finally {
-            setIsProcessing(false);
-        }
-    };
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // DOWNLOAD
-    // ─────────────────────────────────────────────────────────────────────────
-    const downloadRecording = () => {
-        if (!previewUrl) return;
-        const a = document.createElement('a');
-        a.href = previewUrl;
-        a.download = `mediapro-${Date.now()}.webm`;
-        a.click();
-    };
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // CLOUD EXPORT (opt-in)
-    // ─────────────────────────────────────────────────────────────────────────
-    const initiateCloudExport = async (provider: CloudProvider) => {
-        if (!previewUrl) return;
-        setCloudProvider(provider);
-        setIsUploading(true);
-        setUploadProgress(0);
-
-        // Simulated upload progress (replace with real OAuth + API call)
-        const interval = setInterval(() => {
-            setUploadProgress(p => {
-                if (p >= 100) {
-                    clearInterval(interval);
-                    setIsUploading(false);
-                    setShowCloudModal(false);
-                    return 100;
-                }
-                return p + 10;
-            });
-        }, 300);
-
-        /* ── REAL INTEGRATION NOTES ─────────────────────────────────────────
-         * Google Drive:
-         *   1. OAuth2 via https://accounts.google.com/o/oauth2/v2/auth
-         *   2. POST to https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart
-         *
-         * Dropbox:
-         *   1. OAuth2 via https://www.dropbox.com/oauth2/authorize
-         *   2. POST to https://content.dropboxapi.com/2/files/upload
-         * ──────────────────────────────────────────────────────────────────── */
-    };
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // COLLABORATIVE SHARING — generate pseudo shareable link
-    // ─────────────────────────────────────────────────────────────────────────
-    const generateShareLink = useCallback(() => {
-        if (!previewUrl) return;
-        // In production: upload blob to a short-lived storage (S3, Cloudflare R2, etc.)
-        // and return a signed URL. Here we create a local blob URL as a demo.
-        const token = Math.random().toString(36).substring(2, 10).toUpperCase();
-        const link = `${window.location.origin}/share/${token}`;
-        setShareLink(link);
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
         setShowShareModal(true);
     }, [previewUrl]);
 
     const copyShareLink = () => {
-<<<<<<< HEAD
         if (shareLink) navigator.clipboard.writeText(shareLink).then(() => {
             setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000);
         });
     };
 
-=======
-        if (!shareLink) return;
-        navigator.clipboard.writeText(shareLink).then(() => {
-            setLinkCopied(true);
-            setTimeout(() => setLinkCopied(false), 2000);
-        });
-    };
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // ANNOTATION CANVAS HANDLERS
-    // ─────────────────────────────────────────────────────────────────────────
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
     const getCanvasPos = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const rect = canvasRef.current!.getBoundingClientRect();
         return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -490,12 +349,7 @@ const App: React.FC = () => {
     const onCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (!annotationTool) return;
         setIsDrawing(true);
-<<<<<<< HEAD
         setCurrentAnnotation({ id: Date.now().toString(), tool: annotationTool, points: [getCanvasPos(e)], color: activeColor });
-=======
-        const pos = getCanvasPos(e);
-        setCurrentAnnotation({ id: Date.now().toString(), tool: annotationTool, points: [pos], color: activeColor });
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
     };
 
     const onCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -503,615 +357,261 @@ const App: React.FC = () => {
         setCurrentAnnotation(prev => prev ? { ...prev, points: [...prev.points, getCanvasPos(e)] } : prev);
     };
 
-    const onCanvasMouseUp = () => {
-        if (!isDrawing || !currentAnnotation) return;
-        setAnnotations(prev => [...prev, currentAnnotation]);
-<<<<<<< HEAD
-        setCurrentAnnotation(null); setIsDrawing(false);
-    };
-
     const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
     return (
-        <div className="container-custom">
-=======
-        setCurrentAnnotation(null);
-        setIsDrawing(false);
-    };
-
-    const clearAnnotations = () => setAnnotations([]);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // HELPERS
-    // ─────────────────────────────────────────────────────────────────────────
-    const formatTime = (s: number) =>
-        `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // RENDER
-    // ─────────────────────────────────────────────────────────────────────────
-    return (
-        <div className="container-custom">
-            {/* ── Header ─────────────────────────────────────────────────────── */}
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
-            <header className="header-custom">
-                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                    <h1 className="text-4xl font-bold gradient-text">Media Hub Pro</h1>
-                    <p className="text-gray-400 mt-1">Record · Stream · Annotate · Share</p>
+        <div className="container-custom min-h-screen py-8">
+            <header className="header-custom flex justify-between items-center mb-12">
+                <motion.div initial={{ opacity: 0, x: -25 }} animate={{ opacity: 1, x: 0 }}>
+                    <h1 className="text-5xl font-black gradient-text tracking-tighter">Media Hub Pro</h1>
+                    <p className="text-gray-400 mt-2 font-medium">Capture · Mix · Stream · Share</p>
                 </motion.div>
-<<<<<<< HEAD
-                <div className="flex gap-3 items-center flex-wrap">
-=======
-
-                <div className="flex gap-3 items-center flex-wrap">
-                    {/* Device indicator */}
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
+                <div className="flex gap-4 items-center">
                     {(isMobile || isTablet) && (
                         <div className="status-badge bg-yellow-500/10 border-yellow-500/30 text-yellow-400">
-                            {isTablet ? <Tablet className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
-                            <span className="text-xs font-semibold">{isTablet ? 'TABLET' : 'MOBILE'}</span>
+                             {isTablet ? <Tablet className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
+                             <span className="text-xs font-bold">{isTablet ? 'TABLET' : 'MOBILE'}</span>
                         </div>
                     )}
-                    <div className="status-badge bg-white/5 border-white/10">
-<<<<<<< HEAD
+                    <div className="status-badge bg-white/5 border-white/10 px-4 py-2 rounded-2xl flex items-center gap-2">
                         {ffmpegLoaded ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
-                        <span className="text-xs font-semibold">{ffmpegLoaded ? 'READY' : 'LOADING'}</span>
-=======
-                        {ffmpegLoaded
-                            ? <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            : <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
-                        <span className="text-xs font-semibold">{ffmpegLoaded ? 'ENGINE READY' : 'LOADING'}</span>
-                    </div>
-                    <div className="status-badge">
-                        <div className={`w-2 h-2 rounded-full ${(isRecording || isStreaming) ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}`} />
-                        <span className="font-bold text-xs">{(isRecording || isStreaming) ? 'LIVE' : 'STANDBY'}</span>
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
+                        <span className="text-xs font-black tracking-widest uppercase">{ffmpegLoaded ? 'Engine Ready' : 'Warming Up'}</span>
                     </div>
                 </div>
             </header>
 
-<<<<<<< HEAD
-=======
-            {/* ── Error Banner ────────────────────────────────────────────────── */}
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
             <AnimatePresence>
                 {error && (
-                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                        className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl mb-6 flex items-center gap-3 text-red-400">
-                        <AlertCircle className="w-5 h-5 shrink-0" />
-                        <p className="text-sm">{error}</p>
-                        <button onClick={() => setError(null)} className="ml-auto"><X className="w-4 h-4" /></button>
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                        className="bg-red-500/10 border border-red-500/20 p-6 rounded-3xl mb-8 flex items-center gap-4 text-red-400 backdrop-blur-xl">
+                        <AlertCircle className="w-6 h-6 shrink-0" />
+                        <p className="text-sm font-bold uppercase tracking-wide leading-relaxed">{error}</p>
+                        <button onClick={() => setError(null)} className="ml-auto p-2 hover:bg-white/5 rounded-full"><X className="w-5 h-5" /></button>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <main className="main-grid">
-<<<<<<< HEAD
-                <section className="space-y-6">
-=======
-                {/* ════════════════════════════════════════════════════════════
-                    LEFT COLUMN — Preview + Controls
-                    ════════════════════════════════════════════════════════════ */}
-                <section className="space-y-6">
-
-                    {/* Preview + Annotation Canvas */}
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
-                    <div className="glass-card !p-2 relative overflow-hidden">
-                        <div className="preview-container !rounded-2xl" style={{ position: 'relative' }}>
+            <main className="main-grid grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <section className="lg:col-span-2 space-y-8">
+                    <div className="glass-card !p-3 relative overflow-hidden group shadow-2xl">
+                        <div className="preview-container bg-black aspect-video rounded-3xl overflow-hidden relative border border-white/5">
                             {isRecording || isStreaming || stream ? (
                                 <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
                             ) : previewUrl ? (
                                 <video src={previewUrl} controls className="w-full h-full" />
                             ) : (
-                                <div className="flex flex-col items-center gap-4 opacity-20 py-20">
-                                    <Monitor className="w-24 h-24" />
-                                    <p className="text-2xl font-light">Studio Feed</p>
+                                <div className="flex flex-col items-center gap-6 opacity-10 translate-y-4">
+                                    <Monitor className="w-32 h-32" strokeWidth={1} />
+                                    <p className="text-3xl font-black uppercase tracking-[0.3em]">Studio Feed</p>
                                 </div>
                             )}
-<<<<<<< HEAD
-                            {annotationTool && (
-                                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" width={800} height={450}
-                                    style={{ cursor: 'crosshair', zIndex: 10 }}
-                                    onMouseDown={onCanvasMouseDown} onMouseMove={onCanvasMouseMove} onMouseUp={onCanvasMouseUp}
-                                />
-                            )}
-=======
 
-                            {/* Annotation Canvas overlay */}
                             {annotationTool && (
-                                <canvas
-                                    ref={canvasRef}
-                                    className="absolute inset-0 w-full h-full"
-                                    width={800} height={450}
-                                    style={{ cursor: annotationTool ? 'crosshair' : 'default', zIndex: 10 }}
-                                    onMouseDown={onCanvasMouseDown}
-                                    onMouseMove={onCanvasMouseMove}
-                                    onMouseUp={onCanvasMouseUp}
-                                    onMouseLeave={onCanvasMouseUp}
+                                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full z-10 cursor-crosshair" width={1280} height={720}
+                                    onMouseDown={onCanvasMouseDown} onMouseMove={onCanvasMouseMove} onMouseUp={() => { setAnnotations(p => currentAnnotation ? [...p, currentAnnotation] : p); setCurrentAnnotation(null); setIsDrawing(false); }}
                                 />
                             )}
 
-                            {/* Recording timer */}
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                             {(isRecording || isStreaming) && (
-                                <div className="absolute top-6 left-6 flex items-center gap-4 bg-black/80 backdrop-blur-xl px-5 py-2.5 rounded-2xl border border-white/10" style={{ zIndex: 20 }}>
-                                    <div className={`w-3 h-3 rounded-full ${isStreaming ? 'bg-purple-500' : 'bg-red-500'} animate-pulse`} />
-                                    <span className="font-mono text-2xl font-bold tabular-nums">{formatTime(recordingTime)}</span>
+                                <div className="absolute top-8 left-8 flex items-center gap-5 bg-black/80 backdrop-blur-2xl px-6 py-3 rounded-2xl border border-white/10 z-20 shadow-2xl">
+                                    <div className={`w-3.5 h-3.5 rounded-full ${isStreaming ? 'bg-purple-500' : 'bg-red-500'} animate-pulse shadow-[0_0_15px_currentColor]`} />
+                                    <span className="font-mono text-3xl font-black tabular-nums tracking-wider">{formatTime(recordingTime)}</span>
                                 </div>
                             )}
                         </div>
                     </div>
 
-<<<<<<< HEAD
-=======
-                    {/* ── Annotation Toolbar ────────────────────────────────── */}
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
-                    <AnimatePresence>
-                        {(isRecording || previewUrl) && (
-                            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                className="glass-card flex items-center gap-4 flex-wrap">
-                                <span className="text-xs font-black uppercase text-gray-500 tracking-widest shrink-0">Annotate</span>
-<<<<<<< HEAD
-=======
-
-                                {/* Tool buttons */}
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
-                                {[
-                                    { tool: 'pen' as AnnotationTool, icon: <Pencil className="w-4 h-4" />, label: 'Pen' },
-                                    { tool: 'highlight' as AnnotationTool, icon: <Highlighter className="w-4 h-4" />, label: 'Highlight' },
-                                    { tool: 'callout' as AnnotationTool, icon: <Minus className="w-4 h-4" />, label: 'Callout' },
-                                ].map(({ tool, icon, label }) => (
-<<<<<<< HEAD
-                                    <button key={tool} onClick={() => setAnnotationTool(annotationTool === tool ? null : tool)}
-=======
-                                    <button key={tool}
-                                        onClick={() => setAnnotationTool(annotationTool === tool ? null : tool)}
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all
-                                            ${annotationTool === tool ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'}`}>
-                                        {icon} {label}
-                                    </button>
-                                ))}
-<<<<<<< HEAD
-=======
-
-                                {/* Color swatches */}
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
-                                <div className="flex gap-2 ml-auto">
-                                    {ANNOTATION_COLORS.map(c => (
-                                        <button key={c} onClick={() => setActiveColor(c)}
-                                            className={`w-6 h-6 rounded-full border-2 transition-all ${activeColor === c ? 'border-white scale-125' : 'border-transparent'}`}
-                                            style={{ backgroundColor: c }} />
-                                    ))}
-                                </div>
-<<<<<<< HEAD
-                                <button onClick={() => setAnnotations([])} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3 py-2 rounded-xl text-xs font-bold transition-all">Clear</button>
-=======
-
-                                <button onClick={clearAnnotations} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3 py-2 rounded-xl text-xs font-bold transition-all">
-                                    Clear
-                                </button>
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-<<<<<<< HEAD
-=======
-                    {/* ── Start / Stop Buttons ─────────────────────────────── */}
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
-                    <div className="flex flex-wrap gap-4">
+                    <div className="flex gap-5 flex-wrap">
                         {!isRecording && !isStreaming ? (
                             <>
-                                <button onClick={() => startMedia('record')} className="btn-primary grow hover:shadow-[0_0_30px_rgba(59,130,246,0.3)]">
-                                    <PlayCircle className="w-6 h-6" /> Record
+                                <button onClick={() => startMedia('record')} className="btn-primary grow py-6 text-xl shadow-2xl shadow-blue-500/20 active:scale-95 transition-transform">
+                                    <PlayCircle className="w-7 h-7" /> Launch Recording
                                 </button>
-                                <button onClick={() => startMedia('stream')} className="grow bg-purple-600 hover:bg-purple-500 text-white p-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all">
-                                    <Radio className="w-6 h-6" /> Go Live
+                                <button onClick={() => startMedia('stream')} className="grow bg-purple-600 hover:bg-purple-500 text-white py-6 rounded-3xl font-black text-xl flex items-center justify-center gap-4 transition-all shadow-2xl shadow-purple-500/20 active:scale-95">
+                                    <Radio className="w-7 h-7" /> Go Live
                                 </button>
                             </>
                         ) : (
-<<<<<<< HEAD
-                            <button onClick={stopMedia} className="btn-danger w-full text-xl py-6 animate-pulse">
-=======
-                            <button onClick={stopMedia} className="btn-danger w-full text-xl py-6">
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
-                                <Square className="w-6 h-6 fill-current" /> Stop
+                            <button onClick={stopMedia} className="btn-danger w-full py-8 text-2xl font-black tracking-widest uppercase animate-pulse shadow-2xl shadow-red-500/40 active:scale-95 transition-all">
+                                <Square className="w-8 h-8 fill-current" /> Terminate Session
                             </button>
                         )}
                     </div>
 
-<<<<<<< HEAD
                     <AnimatePresence>
                         {previewUrl && !isRecording && !isStreaming && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                                className="glass-card flex flex-wrap items-center justify-between gap-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400"><Scissors className="w-6 h-6" /></div>
-                                    <div><h4 className="font-bold">Post-Production</h4><p className="text-gray-400 text-xs">Edit · Download · Export</p></div>
-                                </div>
-                                <div className="flex gap-2 flex-wrap">
-                                    <button disabled={isProcessing || !ffmpegLoaded} onClick={trimVideo} className="bg-white/5 hover:bg-white/10 px-4 py-3 rounded-xl font-bold text-sm border border-white/10 flex items-center gap-2">
-                                        {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scissors className="w-4 h-4" />} Trim
-                                    </button>
-                                    <button onClick={downloadRecording} className="bg-white/5 hover:bg-white/10 px-4 py-3 rounded-xl font-bold text-sm border border-white/10 flex items-center gap-2">
-                                        <Download className="w-4 h-4" /> Download
-                                    </button>
-                                    <button onClick={() => setShowCloudModal(true)} className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 px-4 py-3 rounded-xl font-bold text-sm">
-                                        Cloud Export
-                                    </button>
-                                    <button onClick={generateShareLink} className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 px-4 py-3 rounded-xl font-bold text-sm">Share</button>
-=======
-                    {/* ── Post-Production Row ──────────────────────────────── */}
-                    <AnimatePresence>
-                        {previewUrl && !isRecording && !isStreaming && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                className="glass-card flex flex-wrap items-center justify-between gap-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
-                                        <Scissors className="w-6 h-6" />
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                                className="glass-card flex flex-wrap items-center justify-between gap-6 p-8 border-white/10 shadow-2xl">
+                                <div className="flex items-center gap-6">
+                                    <div className="w-16 h-16 rounded-3xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                                        <Scissors className="w-8 h-8" strokeWidth={2.5} />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold">Post-Production</h4>
-                                        <p className="text-gray-400 text-xs">Edit · Export · Share</p>
+                                        <h4 className="text-xl font-black tracking-tight">Export & Polish</h4>
+                                        <p className="text-gray-400 text-sm font-medium">Fine-tune your masterpiece</p>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 flex-wrap">
-                                    {/* Trim */}
-                                    <button disabled={isProcessing || !ffmpegLoaded} onClick={trimVideo}
-                                        className="bg-white/5 hover:bg-white/10 px-4 py-3 rounded-xl font-bold text-sm border border-white/10 transition-all disabled:opacity-50 flex items-center gap-2">
-                                        {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scissors className="w-4 h-4" />}
-                                        Quick Trim
+                                <div className="flex gap-3 flex-wrap">
+                                    <button disabled={isProcessing || !ffmpegLoaded} onClick={trimVideo} className="bg-white/5 hover:bg-white/10 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest border border-white/10 flex items-center gap-3 active:scale-95 transition-all">
+                                        {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scissors className="w-4 h-4" />} Smart Trim
                                     </button>
-
-                                    {/* Download */}
-                                    <button onClick={downloadRecording} className="bg-white/5 hover:bg-white/10 px-4 py-3 rounded-xl font-bold text-sm border border-white/10 transition-all flex items-center gap-2">
+                                    <button onClick={downloadRecording} className="bg-white/5 hover:bg-white/10 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest border border-white/10 flex items-center gap-3 active:scale-95 transition-all">
                                         <Download className="w-4 h-4" /> Download
                                     </button>
-
-                                    {/* Cloud Export */}
-                                    <button onClick={() => setShowCloudModal(true)}
-                                        className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
-                                        <Cloud className="w-4 h-4" /> Cloud Export
-                                    </button>
-
-                                    {/* Share Link */}
-                                    <button onClick={generateShareLink}
-                                        className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
-                                        <Link className="w-4 h-4" /> Share Link
-                                    </button>
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
+                                    <button onClick={() => setShowCloudModal(true)} className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all">Cloud Move</button>
+                                    <button onClick={generateShareLink} className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all">Instant Share</button>
                                 </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </section>
 
-<<<<<<< HEAD
-                <aside className="space-y-6">
-                    <div className="glass-card flex flex-col h-full">
-                        <h3 className="text-xl font-bold mb-6 flex items-center gap-3"><Settings className="w-5 h-5 text-blue-400" /> Control Tower</h3>
-                        <div className="space-y-6 grow">
-                            <div className="space-y-3">
-                                <label className="text-xs font-black uppercase text-gray-500 tracking-widest">Input Matrix</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${(isRecording || isStreaming || stream) ? 'bg-blue-500/10 border-blue-500/40' : 'bg-white/5 border-white/5 opacity-30'} ${sysLevel > 0.1 ? 'shadow-[0_0_15px_rgba(59,130,246,0.2)]' : ''}`}>
-                                        <Monitor className="w-6 h-6 text-blue-400" style={{ transform: `scale(${1 + sysLevel * 0.4})` }} />
-                                        <div className="w-full flex flex-col gap-1">
-                                            <div className="flex gap-1 h-2">
-                                                {[...Array(10)].map((_, i) => (
-                                                    <div key={i} className={`flex-1 rounded-sm ${sysLevel > (i / 10) ? 'bg-blue-500 shadow-[0_0_5px_#3b82f6]' : 'bg-white/10'}`} />
+                <aside className="space-y-8">
+                    <div className="glass-card flex flex-col h-full !p-8 shadow-2xl border-white/5">
+                        <header className="flex items-center justify-between mb-8">
+                            <h3 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                                <Settings className="w-6 h-6 text-blue-400" /> Matrix Hub
+                            </h3>
+                        </header>
+
+                        <div className="space-y-8 grow">
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black uppercase text-gray-500 tracking-[0.25em]">Input Pulse</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* System Audio Matrix */}
+                                    <div className={`p-6 rounded-3xl border transition-all duration-300 flex flex-col items-center gap-4 ${stream ? 'bg-blue-500/10 border-blue-500/40 shadow-[0_0_20px_rgba(59,130,246,0.15)]' : 'bg-white/5 border-white/5 opacity-20'} ${sysLevel > 0.1 ? 'scale-105 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : ''}`}>
+                                        <Monitor className={`w-8 h-8 transition-all duration-100 ${sysLevel > 0.1 ? 'text-blue-400 scale-125' : 'text-gray-400'}`} />
+                                        <div className="w-full space-y-2">
+                                            <div className="flex gap-1 h-3">
+                                                {[...Array(12)].map((_, i) => (
+                                                    <div key={i} className={`flex-1 rounded-sm transition-all duration-75 ${sysLevel > (i / 12) ? 'bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'bg-white/10'}`} />
                                                 ))}
                                             </div>
-                                            <span className="text-[8px] font-bold text-gray-500 uppercase">System Audio</span>
+                                            <p className="text-[9px] font-black text-center text-gray-500 uppercase tracking-widest">Sys Level</p>
                                         </div>
                                     </div>
-                                    <div className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${(isRecording || isStreaming || stream) ? 'bg-purple-500/10 border-purple-500/40' : 'bg-white/5 border-white/5 opacity-30'} ${micLevel > 0.1 ? 'shadow-[0_0_15px_rgba(168,85,247,0.2)]' : ''}`}>
-                                        <Mic className="w-6 h-6 text-purple-400" style={{ transform: `scale(${1 + micLevel * 0.4})` }} />
-                                        <div className="w-full flex flex-col gap-1">
-                                            <div className="flex gap-1 h-2">
-                                                {[...Array(10)].map((_, i) => (
-                                                    <div key={i} className={`flex-1 rounded-sm ${micLevel > (i / 10) ? 'bg-purple-500 shadow-[0_0_5px_#a855f7]' : 'bg-white/10'}`} />
+                                    {/* Voice Matrix */}
+                                    <div className={`p-6 rounded-3xl border transition-all duration-300 flex flex-col items-center gap-4 ${stream ? 'bg-purple-500/10 border-purple-500/40 shadow-[0_0_20px_rgba(168,85,247,0.15)]' : 'bg-white/5 border-white/5 opacity-20'} ${micLevel > 0.1 ? 'scale-105 shadow-[0_0_30px_rgba(168,85,247,0.3)]' : ''}`}>
+                                        <Mic className={`w-8 h-8 transition-all duration-100 ${micLevel > 0.1 ? 'text-purple-400 scale-125' : 'text-gray-400'}`} />
+                                        <div className="w-full space-y-2">
+                                            <div className="flex gap-1 h-3">
+                                                {[...Array(12)].map((_, i) => (
+                                                    <div key={i} className={`flex-1 rounded-sm transition-all duration-75 ${micLevel > (i / 12) ? 'bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.6)]' : 'bg-white/10'}`} />
                                                 ))}
                                             </div>
-                                            <span className="text-[8px] font-bold text-gray-500 uppercase">Voice Active</span>
+                                            <p className="text-[9px] font-black text-center text-gray-500 uppercase tracking-widest">Voice Power</p>
                                         </div>
-=======
-                {/* ════════════════════════════════════════════════════════════
-                    RIGHT COLUMN — Control Tower
-                    ════════════════════════════════════════════════════════════ */}
-                <aside className="space-y-6">
-                    <div className="glass-card flex flex-col h-full">
-                        <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
-                            <Settings className="w-5 h-5 text-blue-400" /> Control Tower
-                        </h3>
-
-                        <div className="space-y-6 grow">
-
-                            {/* ── Input Matrix ─────────────────────────────── */}
-                            <div className="space-y-3">
-                                <label className="text-xs font-black uppercase text-gray-500 tracking-widest">Input Matrix</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className={`p-4 rounded-2xl border flex flex-col items-center gap-2 ${(isRecording || isStreaming || stream) ? 'bg-blue-500/10 border-blue-500/40' : 'bg-white/5 border-white/5 opacity-30'}`}>
-                                        <Monitor className={`w-6 h-6 ${(isRecording || isStreaming || stream) ? 'text-blue-400' : ''}`} />
-                                        <span className="text-[10px] font-bold uppercase whitespace-nowrap">Display</span>
-                                    </div>
-                                    <div className={`p-4 rounded-2xl border flex flex-col items-center gap-2 ${(isRecording || isStreaming || stream) ? 'bg-purple-500/10 border-purple-500/40' : 'bg-white/5 border-white/5 opacity-30'}`}>
-                                        <Mic className={`w-6 h-6 ${(isRecording || isStreaming || stream) ? 'text-purple-400' : ''}`} />
-                                        <span className="text-[10px] font-bold uppercase whitespace-nowrap">Voice</span>
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                                     </div>
                                 </div>
                             </div>
 
-<<<<<<< HEAD
-                            <div className="space-y-3">
-                                <label className="text-xs font-black uppercase text-gray-500 tracking-widest flex items-center gap-2"><Volume2 className="w-3.5 h-3.5" /> Audio Mix</label>
-                                <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-4">
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between items-center text-xs text-gray-400">
-                                            <span className={`flex items-center gap-1 transition-all ${micLevel > 0.1 ? 'text-purple-400 font-bold' : ''}`}><Mic className="w-3 h-3" /> Mic</span>
-                                            <button onClick={() => setMicMuted(m => !m)} className={micMuted ? 'text-red-400' : 'text-gray-400'}>{micMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}</button>
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black uppercase text-gray-500 tracking-[0.25em]">Audio Scopes</label>
+                                <div className="p-6 rounded-3xl bg-white/5 border border-white/5 space-y-6">
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors ${micLevel > 0.1 ? 'text-purple-400' : 'text-gray-500'}`}><Mic className="w-3 h-3" /> Voice</span>
+                                            <button onClick={() => setMicMuted(m => !m)} className={`p-1 rounded-lg transition-colors ${micMuted ? 'text-red-500 bg-red-500/10' : 'text-gray-500'}`}>{micMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}</button>
                                         </div>
-                                        <input type="range" min={0} max={1} step={0.05} value={micMuted ? 0 : micVolume} onChange={e => { setMicVolume(+e.target.value); setMicMuted(false); }} className="w-full accent-purple-500" />
+                                        <input type="range" min={0} max={1} step={0.05} value={micMuted ? 0 : micVolume} onChange={e => { setMicVolume(+e.target.value); setMicMuted(false); }} className="w-full accent-purple-500 cursor-pointer" />
                                     </div>
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between items-center text-xs text-gray-400">
-                                            <span className={`flex items-center gap-1 transition-all ${sysLevel > 0.1 ? 'text-blue-400 font-bold' : ''}`}><Monitor className="w-3 h-3" /> System</span>
-                                            <button onClick={() => setSysMuted(m => !m)} className={sysMuted ? 'text-red-400' : 'text-gray-400'}>{sysMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}</button>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors ${sysLevel > 0.1 ? 'text-blue-400' : 'text-gray-500'}`}><Monitor className="w-3 h-3" /> System</span>
+                                            <button onClick={() => setSysMuted(m => !m)} className={`p-1 rounded-lg transition-colors ${sysMuted ? 'text-red-500 bg-red-500/10' : 'text-gray-500'}`}>{sysMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}</button>
                                         </div>
-                                        <input type="range" min={0} max={1} step={0.05} value={sysMuted ? 0 : sysVolume} onChange={e => { setSysVolume(+e.target.value); setSysMuted(false); }} className="w-full accent-blue-500" />
-=======
-                            {/* ── Audio Mixing ─────────────────────────────── */}
-                            <div className="space-y-3">
-                                <label className="text-xs font-black uppercase text-gray-500 tracking-widest flex items-center gap-2">
-                                    <Volume2 className="w-3.5 h-3.5" /> Audio Mix
-                                </label>
-                                <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-4">
-                                    {/* Microphone */}
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between items-center text-xs text-gray-400">
-                                            <span className="flex items-center gap-1"><Mic className="w-3 h-3" /> Microphone</span>
-                                            <button onClick={() => setMicMuted(m => !m)} className={`${micMuted ? 'text-red-400' : 'text-gray-400'} transition-colors`}>
-                                                {micMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                                            </button>
-                                        </div>
-                                        <input type="range" min={0} max={1} step={0.05} value={micMuted ? 0 : micVolume}
-                                            onChange={e => { setMicVolume(+e.target.value); setMicMuted(false); }}
-                                            disabled={micMuted}
-                                            className="w-full accent-purple-500 disabled:opacity-40" />
-                                    </div>
-                                    {/* System audio */}
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between items-center text-xs text-gray-400">
-                                            <span className="flex items-center gap-1"><Monitor className="w-3 h-3" /> System Audio</span>
-                                            <button onClick={() => setSysMuted(m => !m)} className={`${sysMuted ? 'text-red-400' : 'text-gray-400'} transition-colors`}>
-                                                {sysMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                                            </button>
-                                        </div>
-                                        <input type="range" min={0} max={1} step={0.05} value={sysMuted ? 0 : sysVolume}
-                                            onChange={e => { setSysVolume(+e.target.value); setSysMuted(false); }}
-                                            disabled={sysMuted}
-                                            className="w-full accent-blue-500 disabled:opacity-40" />
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
+                                        <input type="range" min={0} max={1} step={0.05} value={sysMuted ? 0 : sysVolume} onChange={e => { setSysVolume(+e.target.value); setSysMuted(false); }} className="w-full accent-blue-500 cursor-pointer" />
                                     </div>
                                 </div>
                             </div>
 
-<<<<<<< HEAD
-                            <div className="space-y-3">
-                                <label className="text-xs font-black uppercase text-gray-500 tracking-widest flex items-center gap-2">Presets</label>
-                                <button onClick={() => setShowPresets(p => !p)} disabled={isRecording || isStreaming} className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between text-sm font-bold">
+                            <div className="space-y-4 pt-4 border-t border-white/5">
+                                <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.25em]">Master Presets</label>
+                                <button onClick={() => setShowPresets(p => !p)} disabled={isRecording || isStreaming} className="w-full p-6 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-between text-xs font-black uppercase tracking-widest hover:bg-white/10 active:scale-95 transition-all disabled:opacity-30">
                                     <span>{selectedPreset.label}</span>
-                                    <span className="text-gray-500 text-[10px]">{selectedPreset.resolution}</span>
+                                    <ChevronDown className={`w-4 h-4 transition-transform ${showPresets ? 'rotate-180' : ''}`} />
                                 </button>
                                 <AnimatePresence>
                                     {showPresets && (
-                                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden rounded-2xl bg-gray-900 border border-white/10">
+                                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="overflow-hidden rounded-3xl bg-gray-900 border border-white/10 shadow-2xl">
                                             {PRESETS.map(p => (
-                                                <button key={p.label} onClick={() => { setSelectedPreset(p); setShowPresets(false); }} className={`w-full px-4 py-3 flex justify-between text-xs hover:bg-white/5 ${selectedPreset.label === p.label ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                    <span>{p.label}</span><span>{p.resolution}</span>
-=======
-                            {/* ── Recording Presets ─────────────────────────── */}
-                            <div className="space-y-3">
-                                <label className="text-xs font-black uppercase text-gray-500 tracking-widest flex items-center gap-2">
-                                    <Sliders className="w-3.5 h-3.5" /> Recording Preset
-                                </label>
-                                <button onClick={() => setShowPresets(p => !p)}
-                                    disabled={isRecording || isStreaming}
-                                    className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between text-sm font-bold hover:bg-white/10 transition-all disabled:opacity-50">
-                                    <span>{selectedPreset.label}</span>
-                                    <span className="text-gray-500 text-xs font-mono">{selectedPreset.resolution} · {selectedPreset.frameRate}fps · {selectedPreset.bitrate}kbps</span>
-                                </button>
-                                <AnimatePresence>
-                                    {showPresets && (
-                                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                                            className="overflow-hidden rounded-2xl border border-white/10 bg-gray-900">
-                                            {PRESETS.map(p => (
-                                                <button key={p.label} onClick={() => { setSelectedPreset(p); setShowPresets(false); }}
-                                                    className={`w-full px-4 py-3 flex items-center justify-between text-sm hover:bg-white/5 transition-all
-                                                        ${selectedPreset.label === p.label ? 'text-blue-400' : 'text-gray-300'}`}>
-                                                    <span className="font-bold">{p.label}</span>
-                                                    <span className="text-xs text-gray-500 font-mono">{p.resolution} · {p.frameRate}fps · {p.bitrate}kbps</span>
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
+                                                <button key={p.label} onClick={() => { setSelectedPreset(p); setShowPresets(false); }} className={`w-full px-6 py-4 flex justify-between text-[11px] font-bold tracking-tight hover:bg-white/5 transition-all ${selectedPreset.label === p.label ? 'text-blue-400' : 'text-gray-500'}`}>
+                                                    <span>{p.label}</span> <span>{p.resolution}</span>
                                                 </button>
                                             ))}
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
                             </div>
-<<<<<<< HEAD
-                        </div>
-                        <button onClick={generateShareLink} disabled={!previewUrl} className="w-full mt-6 py-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-blue-500/10 transition-all flex items-center justify-center gap-3 text-sm font-bold disabled:opacity-30">
-                            <Share2 className="w-4 h-4" /> Share Link
-=======
-
-                            {/* ── Assets Vault ─────────────────────────────── */}
-                            <div className="pt-4 border-t border-white/5">
-                                <h4 className="text-xs font-black uppercase text-gray-500 tracking-widest mb-3">Assets</h4>
-                                {previewUrl ? (
-                                    <div className="group relative rounded-2xl overflow-hidden border border-white/10 aspect-video hover:border-blue-500/50 transition-all cursor-pointer" onClick={downloadRecording}>
-                                        <video src={previewUrl} className="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-all" />
-                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                                            <Download className="w-8 h-8 text-white drop-shadow-xl" />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="h-32 rounded-2xl bg-white/5 border border-dashed border-white/10 flex flex-col items-center justify-center gap-2">
-                                        <Info className="w-5 h-5 text-gray-600" />
-                                        <p className="text-[10px] text-gray-600 font-bold uppercase">Empty Vault</p>
-                                    </div>
-                                )}
-                            </div>
                         </div>
 
-                        {/* Share button */}
-                        <button onClick={generateShareLink} disabled={!previewUrl}
-                            className="w-full mt-6 py-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-blue-500/10 hover:text-blue-400 transition-all flex items-center justify-center gap-3 text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed">
-                            <Share2 className="w-4 h-4" /> Generate Share Link
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
+                        <button onClick={generateShareLink} disabled={!previewUrl} className="w-full mt-10 py-5 rounded-3xl bg-white/5 border border-white/10 hover:bg-blue-500/10 hover:text-blue-400 font-black text-xs uppercase tracking-widest transition-all active:scale-95 disabled:opacity-20 shadow-xl">
+                            <Share2 className="w-4 h-4" /> Finalize Link
                         </button>
                     </div>
                 </aside>
             </main>
 
-<<<<<<< HEAD
+            {/* Modals keep the same functional logic but with refined premium glassmorphism */}
             {showCloudModal && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="glass-card w-full max-w-md">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-bold">Cloud Export</h3>
-                            <button onClick={() => setShowCloudModal(false)}><X className="w-5 h-5 text-gray-400" /></button>
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-3xl flex items-center justify-center z-50 p-6">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card w-full max-w-lg !p-10 shadow-[0_0_100px_rgba(0,0,0,0.5)]">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-3xl font-black tracking-tight">Cloud Warehouse</h3>
+                            <button onClick={() => setShowCloudModal(false)} className="p-2 hover:bg-white/5 rounded-full"><X className="w-6 h-6" /></button>
                         </div>
                         {isUploading ? (
-                            <div className="space-y-4">
-                                <p className="text-gray-400 text-sm">Uploading...</p>
-                                <div className="w-full bg-white/10 rounded-full h-2">
-                                    <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
+                            <div className="space-y-6">
+                                <p className="text-gray-400 font-bold uppercase tracking-widest text-center text-xs">Synchronizing Buffer...</p>
+                                <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden">
+                                    <div className="bg-blue-500 h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                                 </div>
                             </div>
                         ) : (
-                            <div className="space-y-3">
-                                <button onClick={() => initiateCloudExport('googledrive')} className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-blue-500/10 flex items-center gap-4 text-left">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold">GD</div>
-                                    <div><p className="font-bold">Google Drive</p><p className="text-xs text-gray-400">Save to your cloud storage</p></div>
+                            <div className="grid grid-cols-1 gap-4">
+                                <button onClick={() => initiateCloudExport('googledrive')} className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:bg-blue-500/10 hover:border-blue-500/30 flex items-center gap-8 transition-all group">
+                                    <div className="w-16 h-16 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 font-black text-xl shadow-2xl group-hover:scale-110 transition-transform">GD</div>
+                                    <div className="text-left"><p className="text-xl font-black">Google Drive</p><p className="text-gray-500 text-sm font-medium">Export to primary cloud storage</p></div>
                                 </button>
-                                <button onClick={() => initiateCloudExport('dropbox')} className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-blue-500/10 flex items-center gap-4 text-left">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-400/20 flex items-center justify-center text-blue-300 font-bold">DB</div>
-                                    <div><p className="font-bold">Dropbox</p><p className="text-xs text-gray-400">Upload to Dropbox account</p></div>
+                                <button onClick={() => initiateCloudExport('dropbox')} className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:bg-blue-500/10 hover:border-blue-500/30 flex items-center gap-8 transition-all group">
+                                    <div className="w-16 h-16 rounded-2xl bg-blue-400/20 flex items-center justify-center text-blue-300 font-black text-xl shadow-2xl group-hover:scale-110 transition-transform">DB</div>
+                                    <div className="text-left"><p className="text-xl font-black">Dropbox</p><p className="text-gray-500 text-sm font-medium">Professional asset pipeline</p></div>
                                 </button>
                             </div>
                         )}
-                    </div>
+                    </motion.div>
                 </div>
             )}
 
             {showShareModal && shareLink && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="glass-card w-full max-w-md">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-bold">Share Link</h3>
-                            <button onClick={() => setShowShareModal(false)}><X className="w-5 h-5 text-gray-400" /></button>
+                 <div className="fixed inset-0 bg-black/90 backdrop-blur-3xl flex items-center justify-center z-50 p-6">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card w-full max-w-lg !p-10">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-3xl font-black tracking-tight">Public Conduit</h3>
+                            <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-white/5 rounded-full"><X className="w-6 h-6" /></button>
                         </div>
-                        <div className="flex gap-2">
-                            <div className="grow p-3 rounded-xl bg-white/5 border border-white/10 text-xs font-mono text-gray-300 overflow-hidden text-ellipsis">{shareLink}</div>
-                            <button onClick={copyShareLink} className={`px-4 py-3 rounded-xl border ${linkCopied ? 'bg-green-500/20 border-green-500/40' : 'bg-purple-500/10'}`}>
-                                {linkCopied ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                        <div className="flex gap-4">
+                            <div className="grow p-5 rounded-2xl bg-white/5 border border-white/10 text-xs font-mono text-blue-400 overflow-hidden text-ellipsis shadow-inner">{shareLink}</div>
+                            <button onClick={copyShareLink} className={`px-6 py-5 rounded-2xl font-black border transition-all ${linkCopied ? 'bg-green-500/20 border-green-500/40 text-green-400' : 'bg-purple-500/10 border-purple-500/20 text-purple-400 active:scale-90'}`}>
+                                {linkCopied ? <CheckCircle2 className="w-5 h-5" /> : <Link className="w-5 h-5" />}
                             </button>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             )}
 
-            <footer className="mt-16 text-center">
-                <p className="text-[10px] font-bold tracking-[0.2em] text-gray-700 uppercase">Engineered for sechan9999 © 2026 Media Hub Pro</p>
-=======
-            {/* ════════════════════════════════════════════════════════════════
-                MODALS
-                ════════════════════════════════════════════════════════════════ */}
-
-            {/* ── Cloud Export Modal ──────────────────────────────────────────── */}
-            <AnimatePresence>
-                {showCloudModal && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                            className="glass-card w-full max-w-md">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-bold flex items-center gap-3"><Cloud className="w-5 h-5 text-blue-400" /> Cloud Export</h3>
-                                <button onClick={() => setShowCloudModal(false)}><X className="w-5 h-5 text-gray-400 hover:text-white" /></button>
-                            </div>
-
-                            {isUploading ? (
-                                <div className="space-y-4">
-                                    <p className="text-gray-400 text-sm">Uploading to {cloudProvider === 'googledrive' ? 'Google Drive' : 'Dropbox'}…</p>
-                                    <div className="w-full bg-white/10 rounded-full h-2">
-                                        <motion.div className="bg-blue-500 h-2 rounded-full" animate={{ width: `${uploadProgress}%` }} />
-                                    </div>
-                                    <p className="text-right text-xs text-gray-500">{uploadProgress}%</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    <p className="text-gray-400 text-sm mb-4">Choose where to export your recording. All uploads are opt-in and use your own account.</p>
-                                    <button onClick={() => initiateCloudExport('googledrive')}
-                                        className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all flex items-center gap-4 text-left">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm">GD</div>
-                                        <div>
-                                            <p className="font-bold">Google Drive</p>
-                                            <p className="text-xs text-gray-400">Save to your Drive (OAuth required)</p>
-                                        </div>
-                                    </button>
-                                    <button onClick={() => initiateCloudExport('dropbox')}
-                                        className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all flex items-center gap-4 text-left">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-400/20 flex items-center justify-center text-blue-300 font-bold text-sm">DB</div>
-                                        <div>
-                                            <p className="font-bold">Dropbox</p>
-                                            <p className="text-xs text-gray-400">Upload to Dropbox (OAuth required)</p>
-                                        </div>
-                                    </button>
-                                </div>
-                            )}
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* ── Share Link Modal ─────────────────────────────────────────────── */}
-            <AnimatePresence>
-                {showShareModal && shareLink && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                            className="glass-card w-full max-w-md">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-bold flex items-center gap-3"><Link className="w-5 h-5 text-purple-400" /> Shareable Link</h3>
-                                <button onClick={() => setShowShareModal(false)}><X className="w-5 h-5 text-gray-400 hover:text-white" /></button>
-                            </div>
-                            <p className="text-gray-400 text-sm mb-4">Share this link for peer review. No cloud account needed — link expires in 24 hours.</p>
-                            <div className="flex gap-2">
-                                <div className="grow p-3 rounded-xl bg-white/5 border border-white/10 text-xs font-mono text-gray-300 overflow-hidden text-ellipsis whitespace-nowrap">
-                                    {shareLink}
-                                </div>
-                                <button onClick={copyShareLink}
-                                    className={`px-4 py-3 rounded-xl font-bold text-sm transition-all border ${linkCopied ? 'bg-green-500/20 border-green-500/40 text-green-400' : 'bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/20'}`}>
-                                    {linkCopied ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
-                                </button>
-                            </div>
-                            {linkCopied && <p className="text-green-400 text-xs mt-2 text-center">Copied to clipboard!</p>}
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* ── Footer ─────────────────────────────────────────────────────── */}
-            <footer className="mt-16 text-center">
-                <p className="text-[10px] font-bold tracking-[0.2em] text-gray-700 uppercase">
-                    Engineered for sechan9999 © 2026 Media Hub Pro
-                </p>
->>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
+            <footer className="mt-20 py-10 border-t border-white/5 text-center">
+                <p className="text-[10px] font-black tracking-[0.5em] text-gray-700 uppercase">Engineered for sechan9999 © 2026 Studio Core Media</p>
             </footer>
         </div>
     );
 };
+
+// Simple ChevronDown component since it was missing or renamed
+const ChevronDown: React.FC<{ className?: string }> = ({ className }) => (
+    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m6 9 6 6 6-6"/>
+    </svg>
+);
 
 export default App;
