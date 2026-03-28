@@ -472,6 +472,11 @@ const App: React.FC = () => {
                             <h3 className="text-2xl font-black tracking-tight flex items-center gap-3">
                                 <Settings className="w-6 h-6 text-blue-400" /> Matrix Hub
                             </h3>
+                            {!stream && (
+                                <button onClick={() => startMedia('record')} className="text-[10px] font-black uppercase text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20 hover:bg-blue-500/20 transition-all">
+                                    Connect Devices
+                                </button>
+                            )}
                         </header>
 
                         <div className="space-y-8 grow">
