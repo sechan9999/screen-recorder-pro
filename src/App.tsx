@@ -62,6 +62,15 @@ const App: React.FC = () => {
     const [sysMuted, setSysMuted]               = useState(false);
     const micGainRef                            = useRef<GainNode | null>(null);
     const sysGainRef                            = useRef<GainNode | null>(null);
+<<<<<<< HEAD
+    const analyserMicRef                       = useRef<AnalyserNode | null>(null);
+    const analyserSysRef                       = useRef<AnalyserNode | null>(null);
+
+    // ── Audio Levels ──────────────────────────────────────────────────────────
+    const [micLevel, setMicLevel]               = useState(0);
+    const [sysLevel, setSysLevel]               = useState(0);
+=======
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
 
     // ── Feature: Annotation Tools ────────────────────────────────────────────
     const [annotationTool, setAnnotationTool]   = useState<AnnotationTool>(null);
@@ -168,14 +177,22 @@ const App: React.FC = () => {
     const startMedia = async (mode: 'record' | 'stream') => {
         setError(null);
 
+<<<<<<< HEAD
+        if (isMobile || isTablet) {
+            setError('Screen capture is limited on mobile/tablet. Please use a desktop browser.');
+=======
         // Mobile / tablet: getDisplayMedia not widely supported — warn gracefully
         if (isMobile || isTablet) {
             setError('Screen capture is limited on mobile/tablet. Please use a desktop browser for full functionality. Camera capture can be used as a fallback.');
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
         }
 
         try {
             const [w, h] = selectedPreset.resolution.split('x').map(Number);
+<<<<<<< HEAD
+=======
 
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
             const displayStream = await navigator.mediaDevices.getDisplayMedia({
                 video: { frameRate: { ideal: selectedPreset.frameRate }, width: { ideal: w }, height: { ideal: h } },
                 audio: true
@@ -188,12 +205,38 @@ const App: React.FC = () => {
                 const audioContext = new AudioContext();
                 const destination = audioContext.createMediaStreamDestination();
 
+<<<<<<< HEAD
+                // Mic
+                const micSource = audioContext.createMediaStreamSource(micStream);
+                const micGain = audioContext.createGain();
+                micGain.gain.value = micMuted ? 0 : micVolume;
+                micGainRef.current = micGain;
+                const micAnalyser = audioContext.createAnalyser();
+                micAnalyser.fftSize = 256;
+                analyserMicRef.current = micAnalyser;
+                micSource.connect(micGain);
+                micGain.connect(micAnalyser);
+                micGain.connect(destination);
+
+                // System
+=======
                 // System audio gain
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                 if (displayStream.getAudioTracks().length > 0) {
                     const sysSource = audioContext.createMediaStreamSource(new MediaStream([displayStream.getAudioTracks()[0]]));
                     const sysGain = audioContext.createGain();
                     sysGain.gain.value = sysMuted ? 0 : sysVolume;
                     sysGainRef.current = sysGain;
+<<<<<<< HEAD
+                    const sysAnalyser = audioContext.createAnalyser();
+                    sysAnalyser.fftSize = 256;
+                    analyserSysRef.current = sysAnalyser;
+                    sysSource.connect(sysGain);
+                    sysGain.connect(sysAnalyser);
+                    sysGain.connect(destination);
+                }
+
+=======
                     sysSource.connect(sysGain);
                     sysGain.connect(destination);
                 }
@@ -206,12 +249,17 @@ const App: React.FC = () => {
                 micSource.connect(micGain);
                 micGain.connect(destination);
 
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                 combinedStream = new MediaStream([
                     ...displayStream.getVideoTracks(),
                     ...destination.stream.getAudioTracks()
                 ]);
             } catch {
+<<<<<<< HEAD
+                console.warn('Mic unavailable');
+=======
                 console.warn('Mic unavailable. Using screen audio only.');
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
             }
 
             setStream(combinedStream);
@@ -241,12 +289,19 @@ const App: React.FC = () => {
             recorder.start(1000);
             setRecordedChunks([]);
             setPreviewUrl(null);
+<<<<<<< HEAD
+=======
             setShareLink(null);
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
             if (mode === 'record') setIsRecording(true);
             else setIsStreaming(true);
 
         } catch (err: any) {
+<<<<<<< HEAD
+            setError(err.message || 'Failed to start');
+=======
             setError(err.message || 'Failed to start. Check permissions.');
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
         }
     };
 
@@ -257,9 +312,13 @@ const App: React.FC = () => {
         setStream(null);
     };
 
+<<<<<<< HEAD
+    // live gains
+=======
     // ─────────────────────────────────────────────────────────────────────────
     // AUDIO MIXING — live gain update
     // ─────────────────────────────────────────────────────────────────────────
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
     useEffect(() => {
         if (micGainRef.current) micGainRef.current.gain.value = micMuted ? 0 : micVolume;
     }, [micVolume, micMuted]);
@@ -268,6 +327,64 @@ const App: React.FC = () => {
         if (sysGainRef.current) sysGainRef.current.gain.value = sysMuted ? 0 : sysVolume;
     }, [sysVolume, sysMuted]);
 
+<<<<<<< HEAD
+    // Audio level loop
+    useEffect(() => {
+        let animationFrame: number;
+        const dataArrayMic = new Uint8Array(128);
+        const dataArraySys = new Uint8Array(128);
+        const updateLevels = () => {
+            if (analyserMicRef.current) {
+                analyserMicRef.current.getByteFrequencyData(dataArrayMic);
+                const sum = dataArrayMic.reduce((a, b) => a + b, 0);
+                setMicLevel((sum / dataArrayMic.length) / 255);
+            }
+            if (analyserSysRef.current) {
+                analyserSysRef.current.getByteFrequencyData(dataArraySys);
+                const sum = dataArraySys.reduce((a, b) => a + b, 0);
+                setSysLevel((sum / dataArraySys.length) / 255);
+            }
+            animationFrame = requestAnimationFrame(updateLevels);
+        };
+        if (isRecording || isStreaming || stream) updateLevels();
+        else { setMicLevel(0); setSysLevel(0); }
+        return () => cancelAnimationFrame(animationFrame);
+    }, [isRecording, isStreaming, stream]);
+
+    const trimVideo = async () => {
+        if (!previewUrl || !ffmpegLoaded) return;
+        setIsProcessing(true);
+        try {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            await ffmpegRef.current.writeFile('input.webm', await fetchFile(blob));
+            await ffmpegRef.current.exec(['-i', 'input.webm', '-ss', '00:00:00', '-t', '10', '-c', 'copy', 'output.webm']);
+            const data: any = await ffmpegRef.current.readFile('output.webm');
+            setPreviewUrl(URL.createObjectURL(new Blob([data], { type: 'video/webm' })));
+        } catch (err) { setError('Trim failed'); } finally { setIsProcessing(false); }
+    };
+
+    const downloadRecording = () => {
+        if (!previewUrl) return;
+        const a = document.createElement('a');
+        a.href = previewUrl; a.download = `mediapro-${Date.now()}.webm`; a.click();
+    };
+
+    const initiateCloudExport = async (provider: CloudProvider) => {
+        if (!previewUrl) return;
+        setCloudProvider(provider); setIsUploading(true); setUploadProgress(0);
+        const interval = setInterval(() => {
+            setUploadProgress(p => {
+                if (p >= 100) { clearInterval(interval); setIsUploading(false); setShowCloudModal(false); return 100; }
+                return p + 10;
+            });
+        }, 300);
+    };
+
+    const generateShareLink = useCallback(() => {
+        if (!previewUrl) return;
+        const token = Math.random().toString(36).substring(2, 10).toUpperCase();
+        setShareLink(`${window.location.origin}/share/${token}`);
+=======
     // ─────────────────────────────────────────────────────────────────────────
     // TRIM VIDEO
     // ─────────────────────────────────────────────────────────────────────────
@@ -342,10 +459,18 @@ const App: React.FC = () => {
         const token = Math.random().toString(36).substring(2, 10).toUpperCase();
         const link = `${window.location.origin}/share/${token}`;
         setShareLink(link);
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
         setShowShareModal(true);
     }, [previewUrl]);
 
     const copyShareLink = () => {
+<<<<<<< HEAD
+        if (shareLink) navigator.clipboard.writeText(shareLink).then(() => {
+            setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000);
+        });
+    };
+
+=======
         if (!shareLink) return;
         navigator.clipboard.writeText(shareLink).then(() => {
             setLinkCopied(true);
@@ -356,6 +481,7 @@ const App: React.FC = () => {
     // ─────────────────────────────────────────────────────────────────────────
     // ANNOTATION CANVAS HANDLERS
     // ─────────────────────────────────────────────────────────────────────────
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
     const getCanvasPos = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const rect = canvasRef.current!.getBoundingClientRect();
         return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -364,8 +490,12 @@ const App: React.FC = () => {
     const onCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (!annotationTool) return;
         setIsDrawing(true);
+<<<<<<< HEAD
+        setCurrentAnnotation({ id: Date.now().toString(), tool: annotationTool, points: [getCanvasPos(e)], color: activeColor });
+=======
         const pos = getCanvasPos(e);
         setCurrentAnnotation({ id: Date.now().toString(), tool: annotationTool, points: [pos], color: activeColor });
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
     };
 
     const onCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -376,6 +506,15 @@ const App: React.FC = () => {
     const onCanvasMouseUp = () => {
         if (!isDrawing || !currentAnnotation) return;
         setAnnotations(prev => [...prev, currentAnnotation]);
+<<<<<<< HEAD
+        setCurrentAnnotation(null); setIsDrawing(false);
+    };
+
+    const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+
+    return (
+        <div className="container-custom">
+=======
         setCurrentAnnotation(null);
         setIsDrawing(false);
     };
@@ -394,14 +533,19 @@ const App: React.FC = () => {
     return (
         <div className="container-custom">
             {/* ── Header ─────────────────────────────────────────────────────── */}
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
             <header className="header-custom">
                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
                     <h1 className="text-4xl font-bold gradient-text">Media Hub Pro</h1>
                     <p className="text-gray-400 mt-1">Record · Stream · Annotate · Share</p>
                 </motion.div>
+<<<<<<< HEAD
+                <div className="flex gap-3 items-center flex-wrap">
+=======
 
                 <div className="flex gap-3 items-center flex-wrap">
                     {/* Device indicator */}
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                     {(isMobile || isTablet) && (
                         <div className="status-badge bg-yellow-500/10 border-yellow-500/30 text-yellow-400">
                             {isTablet ? <Tablet className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
@@ -409,6 +553,10 @@ const App: React.FC = () => {
                         </div>
                     )}
                     <div className="status-badge bg-white/5 border-white/10">
+<<<<<<< HEAD
+                        {ffmpegLoaded ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
+                        <span className="text-xs font-semibold">{ffmpegLoaded ? 'READY' : 'LOADING'}</span>
+=======
                         {ffmpegLoaded
                             ? <CheckCircle2 className="w-4 h-4 text-green-500" />
                             : <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
@@ -417,11 +565,15 @@ const App: React.FC = () => {
                     <div className="status-badge">
                         <div className={`w-2 h-2 rounded-full ${(isRecording || isStreaming) ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}`} />
                         <span className="font-bold text-xs">{(isRecording || isStreaming) ? 'LIVE' : 'STANDBY'}</span>
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                     </div>
                 </div>
             </header>
 
+<<<<<<< HEAD
+=======
             {/* ── Error Banner ────────────────────────────────────────────────── */}
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
             <AnimatePresence>
                 {error && (
                     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -434,12 +586,16 @@ const App: React.FC = () => {
             </AnimatePresence>
 
             <main className="main-grid">
+<<<<<<< HEAD
+                <section className="space-y-6">
+=======
                 {/* ════════════════════════════════════════════════════════════
                     LEFT COLUMN — Preview + Controls
                     ════════════════════════════════════════════════════════════ */}
                 <section className="space-y-6">
 
                     {/* Preview + Annotation Canvas */}
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                     <div className="glass-card !p-2 relative overflow-hidden">
                         <div className="preview-container !rounded-2xl" style={{ position: 'relative' }}>
                             {isRecording || isStreaming || stream ? (
@@ -452,6 +608,14 @@ const App: React.FC = () => {
                                     <p className="text-2xl font-light">Studio Feed</p>
                                 </div>
                             )}
+<<<<<<< HEAD
+                            {annotationTool && (
+                                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" width={800} height={450}
+                                    style={{ cursor: 'crosshair', zIndex: 10 }}
+                                    onMouseDown={onCanvasMouseDown} onMouseMove={onCanvasMouseMove} onMouseUp={onCanvasMouseUp}
+                                />
+                            )}
+=======
 
                             {/* Annotation Canvas overlay */}
                             {annotationTool && (
@@ -468,6 +632,7 @@ const App: React.FC = () => {
                             )}
 
                             {/* Recording timer */}
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                             {(isRecording || isStreaming) && (
                                 <div className="absolute top-6 left-6 flex items-center gap-4 bg-black/80 backdrop-blur-xl px-5 py-2.5 rounded-2xl border border-white/10" style={{ zIndex: 20 }}>
                                     <div className={`w-3 h-3 rounded-full ${isStreaming ? 'bg-purple-500' : 'bg-red-500'} animate-pulse`} />
@@ -477,28 +642,41 @@ const App: React.FC = () => {
                         </div>
                     </div>
 
+<<<<<<< HEAD
+=======
                     {/* ── Annotation Toolbar ────────────────────────────────── */}
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                     <AnimatePresence>
                         {(isRecording || previewUrl) && (
                             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                                 className="glass-card flex items-center gap-4 flex-wrap">
                                 <span className="text-xs font-black uppercase text-gray-500 tracking-widest shrink-0">Annotate</span>
+<<<<<<< HEAD
+=======
 
                                 {/* Tool buttons */}
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                                 {[
                                     { tool: 'pen' as AnnotationTool, icon: <Pencil className="w-4 h-4" />, label: 'Pen' },
                                     { tool: 'highlight' as AnnotationTool, icon: <Highlighter className="w-4 h-4" />, label: 'Highlight' },
                                     { tool: 'callout' as AnnotationTool, icon: <Minus className="w-4 h-4" />, label: 'Callout' },
                                 ].map(({ tool, icon, label }) => (
+<<<<<<< HEAD
+                                    <button key={tool} onClick={() => setAnnotationTool(annotationTool === tool ? null : tool)}
+=======
                                     <button key={tool}
                                         onClick={() => setAnnotationTool(annotationTool === tool ? null : tool)}
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all
                                             ${annotationTool === tool ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'}`}>
                                         {icon} {label}
                                     </button>
                                 ))}
+<<<<<<< HEAD
+=======
 
                                 {/* Color swatches */}
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                                 <div className="flex gap-2 ml-auto">
                                     {ANNOTATION_COLORS.map(c => (
                                         <button key={c} onClick={() => setActiveColor(c)}
@@ -506,15 +684,22 @@ const App: React.FC = () => {
                                             style={{ backgroundColor: c }} />
                                     ))}
                                 </div>
+<<<<<<< HEAD
+                                <button onClick={() => setAnnotations([])} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3 py-2 rounded-xl text-xs font-bold transition-all">Clear</button>
+=======
 
                                 <button onClick={clearAnnotations} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3 py-2 rounded-xl text-xs font-bold transition-all">
                                     Clear
                                 </button>
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                             </motion.div>
                         )}
                     </AnimatePresence>
 
+<<<<<<< HEAD
+=======
                     {/* ── Start / Stop Buttons ─────────────────────────────── */}
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                     <div className="flex flex-wrap gap-4">
                         {!isRecording && !isStreaming ? (
                             <>
@@ -526,12 +711,37 @@ const App: React.FC = () => {
                                 </button>
                             </>
                         ) : (
+<<<<<<< HEAD
+                            <button onClick={stopMedia} className="btn-danger w-full text-xl py-6 animate-pulse">
+=======
                             <button onClick={stopMedia} className="btn-danger w-full text-xl py-6">
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                                 <Square className="w-6 h-6 fill-current" /> Stop
                             </button>
                         )}
                     </div>
 
+<<<<<<< HEAD
+                    <AnimatePresence>
+                        {previewUrl && !isRecording && !isStreaming && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                                className="glass-card flex flex-wrap items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400"><Scissors className="w-6 h-6" /></div>
+                                    <div><h4 className="font-bold">Post-Production</h4><p className="text-gray-400 text-xs">Edit · Download · Export</p></div>
+                                </div>
+                                <div className="flex gap-2 flex-wrap">
+                                    <button disabled={isProcessing || !ffmpegLoaded} onClick={trimVideo} className="bg-white/5 hover:bg-white/10 px-4 py-3 rounded-xl font-bold text-sm border border-white/10 flex items-center gap-2">
+                                        {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scissors className="w-4 h-4" />} Trim
+                                    </button>
+                                    <button onClick={downloadRecording} className="bg-white/5 hover:bg-white/10 px-4 py-3 rounded-xl font-bold text-sm border border-white/10 flex items-center gap-2">
+                                        <Download className="w-4 h-4" /> Download
+                                    </button>
+                                    <button onClick={() => setShowCloudModal(true)} className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 px-4 py-3 rounded-xl font-bold text-sm">
+                                        Cloud Export
+                                    </button>
+                                    <button onClick={generateShareLink} className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 px-4 py-3 rounded-xl font-bold text-sm">Share</button>
+=======
                     {/* ── Post-Production Row ──────────────────────────────── */}
                     <AnimatePresence>
                         {previewUrl && !isRecording && !isStreaming && (
@@ -570,12 +780,43 @@ const App: React.FC = () => {
                                         className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
                                         <Link className="w-4 h-4" /> Share Link
                                     </button>
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                                 </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </section>
 
+<<<<<<< HEAD
+                <aside className="space-y-6">
+                    <div className="glass-card flex flex-col h-full">
+                        <h3 className="text-xl font-bold mb-6 flex items-center gap-3"><Settings className="w-5 h-5 text-blue-400" /> Control Tower</h3>
+                        <div className="space-y-6 grow">
+                            <div className="space-y-3">
+                                <label className="text-xs font-black uppercase text-gray-500 tracking-widest">Input Matrix</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${(isRecording || isStreaming || stream) ? 'bg-blue-500/10 border-blue-500/40' : 'bg-white/5 border-white/5 opacity-30'} ${sysLevel > 0.1 ? 'shadow-[0_0_15px_rgba(59,130,246,0.2)]' : ''}`}>
+                                        <Monitor className="w-6 h-6 text-blue-400" style={{ transform: `scale(${1 + sysLevel * 0.4})` }} />
+                                        <div className="w-full flex flex-col gap-1">
+                                            <div className="flex gap-1 h-2">
+                                                {[...Array(10)].map((_, i) => (
+                                                    <div key={i} className={`flex-1 rounded-sm ${sysLevel > (i / 10) ? 'bg-blue-500 shadow-[0_0_5px_#3b82f6]' : 'bg-white/10'}`} />
+                                                ))}
+                                            </div>
+                                            <span className="text-[8px] font-bold text-gray-500 uppercase">System Audio</span>
+                                        </div>
+                                    </div>
+                                    <div className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${(isRecording || isStreaming || stream) ? 'bg-purple-500/10 border-purple-500/40' : 'bg-white/5 border-white/5 opacity-30'} ${micLevel > 0.1 ? 'shadow-[0_0_15px_rgba(168,85,247,0.2)]' : ''}`}>
+                                        <Mic className="w-6 h-6 text-purple-400" style={{ transform: `scale(${1 + micLevel * 0.4})` }} />
+                                        <div className="w-full flex flex-col gap-1">
+                                            <div className="flex gap-1 h-2">
+                                                {[...Array(10)].map((_, i) => (
+                                                    <div key={i} className={`flex-1 rounded-sm ${micLevel > (i / 10) ? 'bg-purple-500 shadow-[0_0_5px_#a855f7]' : 'bg-white/10'}`} />
+                                                ))}
+                                            </div>
+                                            <span className="text-[8px] font-bold text-gray-500 uppercase">Voice Active</span>
+                                        </div>
+=======
                 {/* ════════════════════════════════════════════════════════════
                     RIGHT COLUMN — Control Tower
                     ════════════════════════════════════════════════════════════ */}
@@ -598,10 +839,29 @@ const App: React.FC = () => {
                                     <div className={`p-4 rounded-2xl border flex flex-col items-center gap-2 ${(isRecording || isStreaming || stream) ? 'bg-purple-500/10 border-purple-500/40' : 'bg-white/5 border-white/5 opacity-30'}`}>
                                         <Mic className={`w-6 h-6 ${(isRecording || isStreaming || stream) ? 'text-purple-400' : ''}`} />
                                         <span className="text-[10px] font-bold uppercase whitespace-nowrap">Voice</span>
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                                     </div>
                                 </div>
                             </div>
 
+<<<<<<< HEAD
+                            <div className="space-y-3">
+                                <label className="text-xs font-black uppercase text-gray-500 tracking-widest flex items-center gap-2"><Volume2 className="w-3.5 h-3.5" /> Audio Mix</label>
+                                <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-4">
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between items-center text-xs text-gray-400">
+                                            <span className={`flex items-center gap-1 transition-all ${micLevel > 0.1 ? 'text-purple-400 font-bold' : ''}`}><Mic className="w-3 h-3" /> Mic</span>
+                                            <button onClick={() => setMicMuted(m => !m)} className={micMuted ? 'text-red-400' : 'text-gray-400'}>{micMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}</button>
+                                        </div>
+                                        <input type="range" min={0} max={1} step={0.05} value={micMuted ? 0 : micVolume} onChange={e => { setMicVolume(+e.target.value); setMicMuted(false); }} className="w-full accent-purple-500" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between items-center text-xs text-gray-400">
+                                            <span className={`flex items-center gap-1 transition-all ${sysLevel > 0.1 ? 'text-blue-400 font-bold' : ''}`}><Monitor className="w-3 h-3" /> System</span>
+                                            <button onClick={() => setSysMuted(m => !m)} className={sysMuted ? 'text-red-400' : 'text-gray-400'}>{sysMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}</button>
+                                        </div>
+                                        <input type="range" min={0} max={1} step={0.05} value={sysMuted ? 0 : sysVolume} onChange={e => { setSysVolume(+e.target.value); setSysMuted(false); }} className="w-full accent-blue-500" />
+=======
                             {/* ── Audio Mixing ─────────────────────────────── */}
                             <div className="space-y-3">
                                 <label className="text-xs font-black uppercase text-gray-500 tracking-widest flex items-center gap-2">
@@ -633,10 +893,25 @@ const App: React.FC = () => {
                                             onChange={e => { setSysVolume(+e.target.value); setSysMuted(false); }}
                                             disabled={sysMuted}
                                             className="w-full accent-blue-500 disabled:opacity-40" />
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                                     </div>
                                 </div>
                             </div>
 
+<<<<<<< HEAD
+                            <div className="space-y-3">
+                                <label className="text-xs font-black uppercase text-gray-500 tracking-widest flex items-center gap-2">Presets</label>
+                                <button onClick={() => setShowPresets(p => !p)} disabled={isRecording || isStreaming} className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between text-sm font-bold">
+                                    <span>{selectedPreset.label}</span>
+                                    <span className="text-gray-500 text-[10px]">{selectedPreset.resolution}</span>
+                                </button>
+                                <AnimatePresence>
+                                    {showPresets && (
+                                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden rounded-2xl bg-gray-900 border border-white/10">
+                                            {PRESETS.map(p => (
+                                                <button key={p.label} onClick={() => { setSelectedPreset(p); setShowPresets(false); }} className={`w-full px-4 py-3 flex justify-between text-xs hover:bg-white/5 ${selectedPreset.label === p.label ? 'text-blue-400' : 'text-gray-400'}`}>
+                                                    <span>{p.label}</span><span>{p.resolution}</span>
+=======
                             {/* ── Recording Presets ─────────────────────────── */}
                             <div className="space-y-3">
                                 <label className="text-xs font-black uppercase text-gray-500 tracking-widest flex items-center gap-2">
@@ -658,12 +933,18 @@ const App: React.FC = () => {
                                                         ${selectedPreset.label === p.label ? 'text-blue-400' : 'text-gray-300'}`}>
                                                     <span className="font-bold">{p.label}</span>
                                                     <span className="text-xs text-gray-500 font-mono">{p.resolution} · {p.frameRate}fps · {p.bitrate}kbps</span>
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                                                 </button>
                                             ))}
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
                             </div>
+<<<<<<< HEAD
+                        </div>
+                        <button onClick={generateShareLink} disabled={!previewUrl} className="w-full mt-6 py-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-blue-500/10 transition-all flex items-center justify-center gap-3 text-sm font-bold disabled:opacity-30">
+                            <Share2 className="w-4 h-4" /> Share Link
+=======
 
                             {/* ── Assets Vault ─────────────────────────────── */}
                             <div className="pt-4 border-t border-white/5">
@@ -688,11 +969,63 @@ const App: React.FC = () => {
                         <button onClick={generateShareLink} disabled={!previewUrl}
                             className="w-full mt-6 py-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-blue-500/10 hover:text-blue-400 transition-all flex items-center justify-center gap-3 text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed">
                             <Share2 className="w-4 h-4" /> Generate Share Link
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
                         </button>
                     </div>
                 </aside>
             </main>
 
+<<<<<<< HEAD
+            {showCloudModal && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="glass-card w-full max-w-md">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-bold">Cloud Export</h3>
+                            <button onClick={() => setShowCloudModal(false)}><X className="w-5 h-5 text-gray-400" /></button>
+                        </div>
+                        {isUploading ? (
+                            <div className="space-y-4">
+                                <p className="text-gray-400 text-sm">Uploading...</p>
+                                <div className="w-full bg-white/10 rounded-full h-2">
+                                    <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <button onClick={() => initiateCloudExport('googledrive')} className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-blue-500/10 flex items-center gap-4 text-left">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold">GD</div>
+                                    <div><p className="font-bold">Google Drive</p><p className="text-xs text-gray-400">Save to your cloud storage</p></div>
+                                </button>
+                                <button onClick={() => initiateCloudExport('dropbox')} className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-blue-500/10 flex items-center gap-4 text-left">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-400/20 flex items-center justify-center text-blue-300 font-bold">DB</div>
+                                    <div><p className="font-bold">Dropbox</p><p className="text-xs text-gray-400">Upload to Dropbox account</p></div>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {showShareModal && shareLink && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="glass-card w-full max-w-md">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-bold">Share Link</h3>
+                            <button onClick={() => setShowShareModal(false)}><X className="w-5 h-5 text-gray-400" /></button>
+                        </div>
+                        <div className="flex gap-2">
+                            <div className="grow p-3 rounded-xl bg-white/5 border border-white/10 text-xs font-mono text-gray-300 overflow-hidden text-ellipsis">{shareLink}</div>
+                            <button onClick={copyShareLink} className={`px-4 py-3 rounded-xl border ${linkCopied ? 'bg-green-500/20 border-green-500/40' : 'bg-purple-500/10'}`}>
+                                {linkCopied ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <footer className="mt-16 text-center">
+                <p className="text-[10px] font-bold tracking-[0.2em] text-gray-700 uppercase">Engineered for sechan9999 © 2026 Media Hub Pro</p>
+=======
             {/* ════════════════════════════════════════════════════════════════
                 MODALS
                 ════════════════════════════════════════════════════════════════ */}
@@ -775,6 +1108,7 @@ const App: React.FC = () => {
                 <p className="text-[10px] font-bold tracking-[0.2em] text-gray-700 uppercase">
                     Engineered for sechan9999 © 2026 Media Hub Pro
                 </p>
+>>>>>>> 8aaafaf537bb63217053164ab85d739275e14670
             </footer>
         </div>
     );
